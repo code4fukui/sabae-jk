@@ -391,7 +391,6 @@ header #cityOffice {
 	float: left;
 	width: 270px;
 }
-
 #contents #contentsMain .full1 article #faq  {
 	font-size: 90%;
 	background-color: #EEE;
@@ -438,6 +437,9 @@ header #cityOffice {
 	padding-right: 14px;
 	font-size: 90%;
 }
+#contents #contentsMain .full1 article #gallery li:last-child {
+	padding-right: 0;
+}
 #contents #contentsMain .full1 article #gallery li img {
 	border:1px solid #CCC;
 	padding-right: 0px;
@@ -446,6 +448,8 @@ header #cityOffice {
 	margin-right: 0px;
 	margin-bottom: 5px;
 	margin-left: 0px;
+	width: 168;
+	height: 118;
 }
 #contents #contentsMain .full1 .profileColumn .profile {
 	float: right;
