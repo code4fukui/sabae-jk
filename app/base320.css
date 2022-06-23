@@ -1,0 +1,24 @@
+/* iPhone5 320, iPhone6/7 375 1.171875 */
+@media only screen and (min-width: 375px) {
+	body {
+		zoom: 117.1875%;
+	}
+}
+/* iPhone5 320, iPhone6/7Plus 414 1.29375 */
+@media only screen and (min-width: 414px) {
+	body {
+		zoom: 129.375%;
+	}
+}
+/* iPhone5 568, iPad 1024 1.8028169014084507 */
+@media only screen and (min-height: 1024px) {
+	body {
+		zoom: 180.28169%;
+	}
+}
+/* iPhone5 568, iPad 768 1.352112676056338 */
+@media only screen and (min-height: 768px) {
+	body {
+		zoom: 135.211267%;
+	}
+}

@@ -1,0 +1,860 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>まっぷ by 鯖江市役所JK課 / 鯖江市図書館（文化の館）返却ポストマップ</title>
+<meta name="viewport" content="target-densitydpi=middle-dpi, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"/>
+<link rel="apple-touch-icon" href="http://sabae-jk.jp/app/icon-libmap.png"/>
+<meta property="og:image" content="http://sabae-jk.jp/app/icon-libmap.png">
+<script src="fukuno.js/fukuno.js"></script>
+<script src="http://maps.google.com/maps/api/js?sensor=false"></script>
+<script>"use strict";
+
+var zbusstop = 1;
+var ztoilet = 2;
+var zsabakan = 3;
+var zbus = 4;
+
+var libretspot = [
+	"文化の館（図書館）",
+	"立待公民館",
+	"吉川公民館",
+	"北中山公民館",
+	"市民ホールつつじ",
+	"JR鯖江駅2F"
+];
+var isLibRetSpot = function(item) {
+	for (var i = 0; i < libretspot.length; i++)
+		if (libretspot[i] == item.name)
+			return true;
+	return false;
+};
+
+window.onload = function() {
+	var map = new Map("map");
+	var bounds = new LatLngBounds();
+	var fit = true;
+	var viewrosen = true;
+	
+	
+	if (false) {
+		get("btn").onclick = function() {
+			gps(function(lat, lng) {
+			/*
+				var p = map.getCenter();
+				debug(p.lat() + " " + p.lng());
+				return;
+			*/	
+				var pos = new LatLng(lat, lng);
+				map.setCenter(pos);
+				map.setZoom(15);
+				fit = false;
+			});
+		};
+	}
+	get("all").onclick = function() {
+		map.fitBounds(bounds);
+	};
+	
+	var bus = [];
+	
+	getPublicFacilities(function(data) {
+//		dump(data);
+		data.push({
+			name: "JR鯖江駅2F",
+			latitude: 35.943397,
+			longitude: 136.188642
+		});
+		for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			if (!isLibRetSpot(item))
+				continue;
+			var pos = new LatLng(item.latitude, item.longitude);
+			var marker = new MapIcon(map, pos, "libret-icon.png", 48, 48);
+			marker.item = item;
+			marker.pos = pos;
+			marker.onclick = function() {
+				var item = this.item;
+				var s = item.name + "<br>";
+				s += "利用可能時間：-<br>";
+				s += "data: <a href=http://www.city.sabae.fukui.jp/pageview.html?id=11552　target=_blank>データシティ鯖江</a>";
+				map.showInfo(this.pos, s);
+			};
+			marker.marker.setZIndex(zsabakan);
+			bounds.extend(pos);
+		}
+		map.fitBounds(bounds);
+	});
+	
+	return;
+	
+	getWifis(function(data) {
+//	dump(data);
+		data.push( // めがね会館追加
+			{
+				name: "めがね会館",
+				available: "10:00-17:00",
+				power: "有",
+				latitude: 35.942777,
+				longitude: 136.198767
+			}
+		);
+		for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			var pos = new LatLng(item.latitude, item.longitude);
+			var marker = new MapIcon(map, pos, "icon/128x128/icon_wifi.png", 32, 32);
+			marker.item = item;
+			marker.pos = pos;
+			marker.onclick = function() {
+				var item = this.item;
+				var s = item.name + "<br>";
+				s += "利用可能時間：" + item.available + "<br>";
+				s += "電源：" + item.power + "<br>";
+				s += "data: <a href=http://www.city.sabae.fukui.jp/pageview.html?id=11552　target=_blank>データシティ鯖江</a>";
+				map.showInfo(this.pos, s);
+			};
+			marker.marker.setZIndex(zsabakan);
+			bounds.extend(pos);
+		}
+		map.fitBounds(bounds);
+	});
+	
+	getHotels(function(data) {
+		for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			var pos = new LatLng(item.lat, item.long);
+			var marker = new MapIcon(map, pos, "icon/128x128/icon_hotel" + (item.wifi == 1 ? "wifi" : "") + ".png", 32, 32);
+			marker.item = item;
+			marker.pos = pos;
+			marker.onclick = function() {
+				var item = this.item;
+				var s = item.label_ja + "<br>" + item.label_en + "<br>";
+				if (item.onsen == 1)
+					s += "温泉あり<br>";
+				if (item.wifi == 1)
+					s += "Wi-Fiあり<br>";
+				if (item.tripadvisor)
+					s += "<a href=" + item.tripadvisor + " target=_blank>TripAdvisorでクチコミを見る</a><br>";
+				s += "data: <a href=http://linkdata.org/work/rdf1s1142i target=_blank>http://linkdata.org/work/rdf1s1142i</a>";
+				map.showInfo(this.pos, s);
+			};
+			marker.marker.setZIndex(zsabakan);
+			bounds.extend(pos);
+		}
+		map.fitBounds(bounds);
+	});
+	
+	getBusTsutsuji(function(data) {
+		bus = data.bus;
+		for (var i = 0; i < bus.length; i++) {
+			var b = bus[i];
+			var f = function(bus) {
+				getBusIcon(bus.id, function(data) {
+					bus.busicon = data.busicon;
+//dump(bus.busicon);
+				});
+			};
+			f(b);
+			b.getPosition = function() {
+				var st = this.status;
+				if (st === undefined)
+					return null;
+				if (st.busid === undefined)
+					return null;
+				var pos = new LatLng(st.latitude, st.longitude);
+				return pos;
+			};
+			var mps2kmph = function(mps) {
+				return fixfloat(mps * (1 / 1000 * 60 * 60), 0);
+			};
+			b.getStatus = function() {
+				var st = this.status;
+				if (st.busid === undefined) {
+					st = {
+						destination: "-",
+						binid: "-",
+						busid: "-",
+						isRunning: "-",
+						isdelay : "-",
+						speed: "-",
+						direction: "-"
+					};
+				}
+				var s = [
+					"<h3>" + st.destination + "</h3>",
+					"便番号/NO: " + st.binid,
+					"バス番号/BUS: " + st.busid, // this.id,
+				//	st.datetime,
+					(st.isRunning === true ? "運行中/RUN" : "運行以外/NOT RUN"),
+					"遅れ/DELAY: " + (st.isdelay === "true" ? "あり/YES" : "なし/NO"),
+					"速度/SPEED: " + (st.speed === "-" ? "-" : mps2kmph(st.speed) + "km/h"),
+					"方向/DIR: " + (st.direction === "-" ? "-" : fixfloat(st.direction, 0) + "度(deg)")
+				].join("<br>");
+				return s;
+			};
+			b.getIcon = function() {
+				if (this.status == null || this.busicon == null)
+					return null;
+				var dir = this.status.direction;
+					// direction 例  0：北, 90：東, 180：南, 270：西
+				var n = ((dir + 360 / 32) / (360 / 8) >> 0) % 8;
+//				alert(n);
+				return this.busicon[n].iconURL;
+			};
+			b.draw = function() {
+				var pos = this.getPosition();
+				if (pos !== null) {
+					var url = this.getIcon();
+					if (this.icon === undefined) {
+//						this.icon = new MapMarker(map, pos);
+						this.icon = new MapIcon(map, pos, makeIconTsutsuji(url));
+						this.icon.bus = this;
+						this.icon.onclick = function() {
+//							this.bus.zoom();
+							var d = this.bus;
+							var s = d.getStatus();
+							map.showInfo(this.pos, s);
+						};
+					} else {
+						this.icon.setPosition(pos);
+						this.icon.setIcon(url);
+					}
+					this.icon.pos = pos;
+					this.icon.marker.setZIndex(zbus);
+				}
+			};
+			b.zoom = function() {
+				var pos = this.getPosition();
+				if (pos !== null) {
+					map.setZoom(18);
+					map.setCenter(pos);
+				}
+			};
+		}
+	});
+	var drawBus = function() {
+		for (var i = 0; i < bus.length; i++) {
+			var f = function(b) {
+				getBusStatus(b.id, function(st) {
+					b.status = st;
+					b.draw();
+				});
+			};
+			f(bus[i]);
+		}
+	};
+	setInterval(drawBus, 3000);
+	
+	if (!viewrosen)
+		return;
+	
+	getRosenTsutsuji(function(data) {
+		var drawBusLine = function(rosenid, name, col) {
+			getBusStopsTsutsuji(rosenid, function(data) {
+	
+				var busstop = data.busstop;
+//				dump(data);
+				var alpha = .5;
+				var line = new MapPolyline(map, col, alpha);
+				for (var i = 0; i < busstop.length; i++) {
+					var item = busstop[i];
+					var pos = new LatLng(item.latitude, item.longitude);
+//					var marker = new MapCircle(map, pos, 5, col);
+					line.addPoint(pos);
+
+//					bounds.extend(pos);
+				}
+//				map.fitBounds(bounds);
+			});
+		};
+		var rosen = data.rosen;
+		for (var i = 0; i < rosen.length; i++) {
+			var item = rosen[i];
+			drawBusLine(item.id, item.name, item.col);
+		}
+	});
+//	var base = "http://localhost:8080/tstore/";
+	var base = "http://sabae.club/tstore/";
+	jsonp(base + "sabaebus/busstops?callback=" + getCallbackMethod(function(data) {
+//		dump(data);
+		var iconfn = "icon/128x128/icon_busstop.png";
+		for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			var pos = new LatLng(item.lat, item.lng);
+			var marker = new MapIcon(map, pos, iconfn, 32, 32);
+			marker.item = item;
+			marker.pos = pos;
+			marker.onclick = function() {
+				var d = this.item;
+				var m = this;
+//				alert(d.id);
+				jsonp(base + "sabaebus/timetable?stop=" + d.id + "&callback=" + getCallbackMethod(function(data) {
+//					dump(data);
+					var s = "バス停：" + d.name + "<br>";
+					if (data.length == 0) {
+						s = "本日このバス停に停まるバスはありません";
+					} else {
+						s += "<table class=timetable>";
+						for (var i = 0; i < data.length; i++) {
+							var t = data[i];
+							if (t.time.length == 8)
+								t.time = t.time.substring(0, 5);
+							s += "<tr><td>" + t.time + "</td><td>" + t.name + "</td></tr>";
+						}
+						s += "</table>";
+					}
+					s += "<br>データ提供：<a href=http://www.city.sabae.fukui.jp/users/tutujibus/web-api/web-api.html target=_blank>つつじバス / 鯖江市｜WEB APIデータ</a>";
+					map.showInfo(m.pos, s);
+				}));
+			};
+			marker.marker.setZIndex(zbusstop);
+		}
+	}));
+
+	getSabakan(function(data) {
+		 for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			var pos = new LatLng(item.latitude, item.longitude);
+//			var marker = new MapCircle(map, pos, 30, "00aaFF");
+//			var marker = new MapMarker(map, pos);
+			var marker = new MapIcon(map, pos, "icon/128x128/icon_star.png", 32, 32);
+			marker.item = item;
+			marker.pos = pos;
+			marker.onclick = function() {
+				var d = this.item;
+				var s = "<img src=" + d.simage + "><br>" + d.name + "<br>データ提供：<a href=http://www.city.sabae.fukui.jp/pageview.html?id=11552>データシティ鯖江</a>";
+				map.showInfo(this.pos, s);
+			};
+			marker.marker.setZIndex(zsabakan);
+			bounds.extend(pos);
+		 }
+		map.fitBounds(bounds);
+	});
+	
+	getToilets(function(data) {
+//	dump(data);
+		for (var i = 0; i < data.length; i++) {
+			var item = data[i];
+			var pos = new LatLng(item.lat, item.long);
+			var marker = new MapIcon(map, pos, "icon_toilet2.png", 24, 24);
+///			var marker = new MapMarker(map, pos);
+//alert(icon);
+//			var marker = new MapIcon(map, pos, icon);
+			marker.item = item;
+			marker.pos = pos;
+			var list = [
+				[ "man", "男性用" ],
+				[ "woman", "女性用" ],
+				[ "handicapped", "障碍者用" ],
+				[ "babybed", "ベビーベッド" ]
+			];
+			marker.onclick = function() {
+				var d = this.item;
+				var s = "トイレ：" + d.label_ja + "<br>";
+				for (var i = 0; i < list.length; i++) {
+					var n = d["http://www3.city.sabae.fukui.jp/xml/toilet/" + list[i][0]];
+					s += list[i][1] + ": " + (n ? n : "-") + "<br>";
+				};
+/*				s += "<img src=" + d.image1url + " width=100%><br>"; */
+				s += "データ提供：<a href=http://www.city.sabae.fukui.jp/pageview.html?id=11552>データシティ鯖江</a>";
+				map.showInfo(this.pos, s);
+			};
+			marker.marker.setZIndex(ztoilet);
+		}
+	});
+};
+var rdf2data = function(rdf) {
+	var res = [];
+	for (var url in rdf) {
+		var item = {};
+		item.url = url;
+		var d = rdf[url];
+		for (var prop in d) {
+			var d2 = d[prop];
+			var name = prop.substring(prop.indexOf('#') + 1);
+			if (d2.length == 1) {
+				item[name] = d2[0].value;
+			} else {
+				for (var i = 0; i < d2.length; i++)
+					item[name + "_" + d2[i].lang] = d2[i].value;
+			}
+		}
+		res.push(item);
+	}
+	return res;
+};
+var getLinkData = function(url, callback) {
+	jsonp(url + "?callback=" + getCallbackMethod(function(data) {
+//		dump(data);
+//		dump(rdf2data(data));
+		callback(rdf2data(data));
+	}));
+};
+var getHotels = function(callback) {
+	var url = "http://linkdata.org/api/1/rdf1s1142i/HOTEL_SABAE_rdf.json";
+	getLinkData(url, callback);
+};
+var getWifis = function(callback) {
+	var url = "http://www3.city.sabae.fukui.jp/xml/wifi/wifi.xml";
+	xml2json(url, function(data) {
+		callback(data.dataroot.wifi);
+	});
+};
+var getPublicFacilities = function(callback) {
+	var url = "http://www3.city.sabae.fukui.jp/xml/public/public.xml";
+	xml2json(url, function(data) {
+		callback(data.dataroot.public);
+	});
+};
+var getToiletsXML = function(callback) {
+	var url = "http://www3.city.sabae.fukui.jp/xml/toilet/toiletinformation.xml";
+	xml2json(url, function(data) {
+//		dump(data);
+		callback(data.dataroot.toiletinformation);
+	});
+};
+var getToilets = function(callback) {
+	var url = "http://linkdata.org/api/1/rdf1s132i/toilet_list_rdf.json";
+	getLinkData(url, callback);
+};
+var getSabakan = function(callback) {
+	var url = "http://www3.city.sabae.fukui.jp/xml/sabakan/sabakan.xml";
+	xml2json(url, function(data) {
+//		dump(data);
+		callback(data.dataroot.sabakan);
+	});
+};
+var xml2json = function(url, callback) {
+//	var srcenc = "SJIS";
+	var srcenc = "utf-8";
+	var host = "fukuno.jig.jp";
+	var host = "localhost:8080";
+	var host = "sabae.club";
+	var base = "http://" + host + "/proxy/ITqT5WkhCf2yn1s9?cnv=xml2json&srcenc=" + srcenc;
+	var url2 = base + "&cache=no&callback=" + getCallbackMethod(callback) + "&url=" + encodeURI(url);
+	jsonp(url2);
+};
+//
+var gps = function(callback) {
+	var supportgps = typeof navigator.geolocation != 'undefined';
+	if (supportgps) {
+		var gpsid = navigator.geolocation.watchPosition(
+			function(pos) { // success
+				navigator.geolocation.clearWatch(gpsid);
+				var lat = pos.coords.latitude;
+				var lng = pos.coords.longitude;
+				callback(lat, lng);
+			},
+			function(e) { // error
+			}
+		);
+	}
+};
+var getDistanceList = function(lat, lng, list) { // list have getPosition()
+	var lat = currentpos.lat();
+	var lng = currentpos.lng();
+	var dislist = [];
+	for (var i = 0; i < list.length; i++) {
+		var m = list[i];
+		var p = m.getPosition();
+		var d = getDistance(lat, lng, p.lat(), p.lng());
+		dislist.push({ item: m, distance: d });
+	}
+	dislist.sort(function(a, b) {
+		return a.distance - b.distance;
+	});
+	return dislist;
+};
+var getDistance = function(lat1, lng1, lat2, lng2) {
+	var dlat = (lat2 - lat1) * Math.PI / 180;
+	var dlng = (lng2 - lng1) * Math.PI / 180;
+	var a = Math.sin(dlat / 2) * Math.sin(dlat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dlng / 2) * Math.sin(dlng / 2);
+	return 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 6371; // 6371 = R of the Earth in km
+};
+/*
+rosen col
+#e1272a // 中央
+#39821b // 鯖江南
+#235010 // 新横江
+#57bff7 // 神明
+#2036f2 // 片上・北中山
+#73f641 // 立待
+#f4c03b // 吉川
+#e58ef5 // 豊
+#74307f // 中河・北中山
+#e48632 // 河和田
+#772b17 // 丹南高校
+#858585 // 歴史の道
+*/
+var getRosenTsutsuji = function(callback) {
+	callback({ "rosen":[
+		{"id":"1","name":"中央線",col:"#e1272a"},
+		{"id":"2","name":"鯖江南線",col:"#39821b"},
+		{"id":"3","name":"新横江線",col:"#235010"},
+		{"id":"4","name":"神明線",col:"#57bff7"},
+		{"id":"5","name":"片上・北中山線",col:"#2036f2"},
+		{"id":"6","name":"立待線",col:"#73f641"},
+		{"id":"7","name":"吉川線",col:"#f4c03b"},
+		{"id":"8","name":"豊線",col:"#e58ef5"},
+		{"id":"9","name":"中河・北中山線",col:"#74307f"},
+		{"id":"10","name":"河和田線",col:"#e48632"},
+		{"id":"11","name":"丹南高校線",col:"#e772b17"},
+		{"id":"12","name":"歴史の道線",col:"#858585"},
+		{"id":"99","name":"福鉄鯖浦線",col:"#000000"} // なぞ路線
+	]});
+};
+var getBusTsutsuji = function(callback) {
+	callback({ bus: [
+		{ id: 1, spec: null },
+		{ id: 2, spec: null },
+		{ id: 3, spec: null },
+		{ id: 4, spec: null },
+		{ id: 5, spec: null },
+		{ id: 6, spec: null },
+		{ id: 7, spec: null }
+	] });
+};
+// http://www.city.sabae.fukui.jp/users/tutujibus/web-api/10.html
+var getBusIcon = function(busid, callback) {
+	var url = "http://tutujibus.com/busiconLookup.php";
+	url += "?busid=" + busid;
+	url += "&callback=" + getCallbackMethod(callback);
+	jsonp(url);
+};
+// http://www.city.sabae.fukui.jp/users/tutujibus/web-api/05.html
+var getBusStatus = function(busid, callback) {
+	var url = "http://tutujibus.com/busLookup.php";
+	url += "?busid=" + busid;
+	url += "&callback=" + getCallbackMethod(callback);
+	jsonp(url);
+};
+var getBusStopsTsutsuji = function(rosenid, callback) {
+	var url = "http://tutujibus.com/busstopLookup.php";
+	url += "?rosenid=" + rosenid;
+	url += "&callback=" + getCallbackMethod(callback);
+	jsonp(url);
+};
+
+/*
+var resizeMap = function() {
+	var w = document.documentElement.clientWidth;
+	var h = document.documentElement.clientHeight;
+	var gap = 175;
+	get("map").style.height = (h - gap) + "px";
+};
+window.onresize = resizeMap;
+window.addEventListener("load", resizeMap, false);
+*/
+
+// --> map util (google map)
+var makeIconTsutsuji = function(url) {
+	// つつじバス特別
+	return new google.maps.MarkerImage(
+		url,
+		new google.maps.Size(64, 64),
+		new google.maps.Point(0, 0),
+		new google.maps.Point(32, 32)
+	);
+};
+
+var Map = function(id) {
+	this.map = new google.maps.Map(get(id), {
+		center: new google.maps.LatLng(36.208823, 138.251953),	// 日本全体にちょうどいい
+		zoom: 4, // 5だと日本全体, 1で世界地図
+//		disableDoubleClickZoom: true,
+		mapTypeId: google.maps.MapTypeId.ROADMAP,
+//		mapTypeId: google.maps.MapTypeId.HYBRID,
+//		mapTypeId: "mono",
+		mapTypeIds: ['mono', google.maps.MapTypeId.ROADMAP]
+	});
+	this.info = new google.maps.InfoWindow();
+	return;
+	var styleOptions = [ { 'elementType': 'geometry', 'stylers': [ { 'gamma': 0.8 }, { 'saturation': -100 }, { 'visibility': 'simplified' }, { 'lightness': 20 } ] },{ 'elementType': 'labels', 'stylers': [ { 'visibility': 'off' } ] },{ 'featureType': 'poi.park', 'elementType': 'geometry', 'stylers': [ { 'lightness': 30 }, { 'visibility': 'on' } ] },{ 'featureType': 'road.highway', 'elementType': 'geometry', 'stylers': [ { 'visibility': 'simplified' } ] },{ 'featureType': 'landscape', 'elementType': 'geometry', 'stylers': [ { 'visibility': 'off' } ] },{ 'featureType': 'road', 'stylers': [ { 'lightness': 100 } ] },{ 'featureType': 'transit.line', 'elementType': 'geometry', 'stylers': [ { 'visibility': 'on' }, { 'lightness': 30 } ] },{ 'featureType': 'poi.business', 'elementType': 'geometry', 'stylers': [ { 'lightness': -10 }, { 'visibility': 'on' } ] } ];
+	var styledMapOptions = { name: 'モノクロ' }
+	var monoType = new google.maps.StyledMapType(styleOptions, styledMapOptions);
+	this.map.mapTypes.set('mono', monoType);
+	this.map.setMapTypeId('mono');
+};
+Map.prototype = {
+	fitBounds: function(bounds) {
+		this.map.fitBounds(bounds.b);
+	},
+	setZoom: function(zoom) {
+		this.map.setZoom(zoom);
+	},
+	setCenter: function(ll) {
+		this.map.setCenter(ll.p);
+	},
+	getCenter: function() {
+		var p = this.map.getCenter();
+		return new LatLng(p);
+	},
+	panTo: function(ll) {
+		this.map.panTo(ll.p);
+	},
+	showInfo: function(pos, s) {
+		if (pos !== null && s !== null) {
+			this.info.setContent(s);
+			this.info.setPosition(pos.p);
+			this.info.setOptions({ "pixelOffset": new google.maps.Size(0, -48) });
+			this.info.open(this.map); // todo
+		} else {
+			this.info.close();
+		}
+	},
+};
+var LatLng = function(lat, lng) {
+	if (lng != null)
+		this.p = new google.maps.LatLng(lat, lng);
+	else
+		this.p = lat;
+};
+var LatLngBounds = function() {
+	this.b = new google.maps.LatLngBounds();
+};
+LatLngBounds.prototype = {
+	extend: function(ll) {
+		this.b.extend(ll.p);
+	},
+	getCenter: function() {
+		var p = this.b.getCenter();
+		return new LatLng(p);
+	}
+};
+LatLng.prototype = {
+	lat: function() {
+		return this.p.lat();
+	},
+	lng: function() {
+		return this.p.lng();
+	}
+};
+var MapPolyline = function(map, col, alpha) {
+	this.pnts = new google.maps.MVCArray();
+	this.poly = new google.maps.Polyline({
+		map: map.map,
+		path: this.pnts,
+		strokeColor: col !== undefined ? col : "#ff0000",
+		strokeOpacity: alpha,
+		strokeWeight: 6
+	});
+};
+MapPolyline.prototype = {
+	addPoint: function(ll) {
+		this.pnts.push(ll.p);
+		this.poly.setPath(this.pnts);
+	},
+};
+var MapMarker = function(map, pos, colrgb) {
+	var opt = {
+		map: map.map,
+		position: pos.p,
+//		shadow: getIconShadow(),
+//		draggable: true
+	};
+	if (colrgb != null) {
+		opt.icon = "http://chart.apis.google.com/chart?chst=d_map_pin_letter&chld=" + "S" + "|" + colrgb + "|FFFFFF";
+	}
+	this.marker = new google.maps.Marker(opt);
+	this.marker.parent = this;
+	google.maps.event.addListener(this.marker, "click", function() {
+		if (this.parent.onclick != null) {
+			this.parent.onclick.call(this.parent);
+		}
+	});
+};
+MapMarker.prototype = {
+	setPosition: function(p) {
+		this.marker.setPosition(p.p);
+	},
+};
+var MapCircle = function(map, pos, r, col) {
+	this.marker = new google.maps.Circle({
+		map: map.map,
+		center: pos.p,
+//		fillColor: "#0000ff",
+		fillColor: col !== undefined ? col : "#ff0000",
+		fillOpacity: .5,
+		strokeColor: col !== undefined ? col : "#000000",
+//		strokeOpacity: 0,
+		strokeWeight: 5,
+		radius: r
+	});
+	this.marker.parent = this;
+	google.maps.event.addListener(this.marker, "click", function() {
+		if (this.parent.onclick != null) {
+			this.parent.onclick.call(this.parent);
+		}
+	});
+};
+MapCircle.prototype = {
+	setPosition: function(p) {
+		this.marker.setPosition(p.p);
+	}
+};
+var MapIcon = function(map, pos, iconfn, iw, ih) {
+	var icon = iconfn;
+	if (iw && ih) {
+		icon = new google.maps.MarkerImage(iconfn);
+		icon.scaledSize = new google.maps.Size(iw, ih);
+	}
+	var opt = {
+		map: map.map,
+		position: pos.p,
+		icon: icon
+	};
+	this.map = map;
+	this.marker = new google.maps.Marker(opt);
+	this.marker.parent = this;
+	google.maps.event.addListener(this.marker, "click", function() {
+		if (this.parent.onclick != null) {
+			this.parent.onclick.call(this.parent);
+		}
+	});
+};
+MapIcon.prototype = {
+	setPosition: function(p) {
+		this.marker.setPosition(p.p);
+	},
+	setIcon: function(url) {
+		this.marker.setIcon(url);
+	},
+};
+</script>
+<style>
+body {
+	margin: 0;
+	color: #00733E;
+	x-color: #61D8A2;
+	x-background: #36D88E;
+	x-background: #a33;
+	background-image: url(jk-bg.jpg);
+	background-size: 100% 100%;
+	x-background-repeat: no-repeat;
+	font-family: Verdana, "游ゴシック", YuGothic, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+}
+h1 {
+	x-background: #36D88E;
+	color: white;
+	padding: 0em .5em;
+}
+.link {
+	margin: 10px 2em 1em 2em;
+	text-algin: center;
+	padding: 1em;
+	background: rgba(255, 255, 255, .8);
+	border-radius: 8px;
+	color: #333;
+	font-size: 120%;
+}
+.link a {
+	display: block;
+	text-decoration: none;
+}
+a {
+	color: #222 !important;
+}
+#map {
+	height: 320px;
+}
+#main {
+	text-align: center;
+	display: inline-block;
+	width: 320px;
+	height: 2pem;
+}
+
+button {
+	margin: 5px;
+	padding: 6px;
+	width: 100px;
+	box-sizing: border-box;
+	border: 3px solid #833;
+	background-color: #fee;
+}
+
+#list {
+	position: relative;
+	padding: 10px 0px;
+	white-space: nowrap;
+	height: 200px;
+	width: 100%;
+	overflow-x: auto;
+}
+.item h3 {
+	font-size: 120%;
+	display: inline-block;
+	padding-bottom: 8px;
+	padding-top: 4px;
+}
+.item {
+	text-align: left;
+	white-space: normal;
+	vertical-align: top;
+	display: inline-block;
+	width: 150px;
+	height: 160px;
+	margin: 8px;
+	border-raidus: 5px;
+	border: 2px solid gray;
+	padding: 8px;
+	font-size: 80%;
+}
+#src {
+	font-size: 50%;
+	text-align: center;
+	margin: 0px;
+	x-position: fixed;
+	x-bottom: 0px;
+	x-right: 4px;
+}
+#foot {
+	background-image: url(jk-footmap.png);
+	background-size: 320px auto;
+	background-repeat: no-repeat;
+	position: relative;
+	top: 8px;
+	width: 320px;
+	height: 100px;
+}
+#link1, #link2, #link3 {
+	display: block;
+	position: absolute;
+	width: 60px;
+	height: 60px;
+	top: 0px;
+	opacity: 0;
+	background-color: red;
+}
+#link1 {
+	left: 40px;
+}
+#link2 {
+	left: 130px;
+}
+#link3 {
+	left: 220px;
+}
+.footer {
+	font-size: 80%;
+}
+</style>
+<link type="text/css" rel="stylesheet" href="base320.css">
+</head>
+<body>
+
+<div id="main"><div id="map"></div><!--<button id="btn">現在地</button>--><button id="all">全体図</button>
+
+<div id="foot">
+	<a id=link1 href=jk-libspace.html>GO</a>
+	<a id=link2 href=index.html>GO</a>
+	<a id=link3 href=jk-libsearch.html>GO</a>
+</div>
+
+
+データ提供：<a href=http://data.city.sabae.lg.jp/ target=_blank>データシティ鯖江</a><br>
+アプリ： CC BY <a href=http://sabae-jk.jp/ target=_blank>鯖江市役所JK課</a><br>
+<a href=http://www.city.sabae.fukui.jp/pageview.html?id=17461 target=_blank>図書館新アプリ「さばとマップ」登場！</a><br>
+<!--<a href=https://itunes.apple.com/jp/app/sabota-zheng-jiang-tu-shu/id912167919?mt=8 target=_blank>iPhone版 Sabota</a><br>-->
+<!--<a href=https://faavo.jp/sabae/project/402 target=_blank>JK課クラウドファンディング実施中！</a><br>-->
+</div>
+
+</body>
+</html>

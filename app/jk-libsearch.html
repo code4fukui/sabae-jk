@@ -1,0 +1,709 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>本さがし by 鯖江市役所JK課 / 鯖江市図書館（文化の館）本検索アプリ</title>
+<meta name="viewport" content="target-densitydpi=middle-dpi, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"/>
+<link rel="apple-touch-icon" href="http://sabae-jk.jp/app/icon-libsearch.png"/>
+<meta property="og:image" content="http://sabae-jk.jp/app/icon-libsearch.png">
+<style>
+body {
+	margin: 0;
+	color: #00733E;
+	background-image: url(jk-honsagashi.png), url(jk-bg.jpg);
+	background-size: 320px auto, 320px auto;
+	background-repeat: no-repeat, no-repeat;
+	font-family: Verdana, "游ゴシック", YuGothic, "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+}
+#map {
+	height: 400px;
+	weight: 30px;
+}
+form {
+	font-size: 120%;
+	color: #111;
+	x-border: 3px solid #218457;
+}
+.footer {
+	position: absolute;
+	top: 470px;
+	x-margin: 2em 0em;
+	box-sizing: border-box;
+	padding: 1em;
+	x-background: rgba(255, 255, 255, .8);
+	color: #333;
+	font-size: 80%;
+	width: 320px;
+	text-align: center;
+}
+h1 {
+	opacity: 0;
+}
+a {
+	color: #222 !important;
+}
+input[type="text"] {
+	height: 40px;
+	border: none;
+	font-size: 120%;
+	padding: 0px 0.5em;
+	background: rgba(0,0,0,0);
+	position: absolute;
+	width: 210px;
+	left: 20px;
+	x-background:red;
+}
+button {
+	width: 50px;
+	height: 50px;
+	position: absolute;
+	left: 260px;
+	opacity: 0;
+	x-background:red;
+}
+#title {
+	top: 158px;
+}
+#author {
+	top: 264px;
+}
+#keyword {
+	top: 348px;
+	display: none;
+}
+#btn1 {
+	top: 153px;
+}
+#btn2 {
+	top: 259px;
+}
+#btn3 {
+	top: 348px;
+	display: none;
+}
+.sample {
+	display: none;
+	color: white;
+	font-size: 400%;
+	padding: 3em;
+}
+#foot {
+	background-image: url(jk-footsrch.png);
+	background-size: 320px auto;
+	background-repeat: no-repeat;
+	position: absolute;
+	top: 376px;
+	width: 320px;
+	height: 100px;
+}
+#spc, #top, #map {
+	display: block;
+	position: absolute;
+	width: 60px;
+	height: 60px;
+	background-color: red;
+	top: 0px;
+	opacity: 0;
+}
+#spc {
+	left: 40px;
+}
+#top {
+	left: 130px;
+}
+#map {
+	left: 220px;
+}
+</style>
+<link type="text/css" rel="stylesheet" href="base320.css">
+</head>
+<body>
+<h1>けんさく！鯖江の本</h1>
+
+
+				<form name="searchinput" action="https://www.lib100.nexs-service.jp/sabae/webopac/searchinput.do" target="_self" method="post" onsubmit="return search();">
+
+				<input type="hidden" name="searching" value="0">
+				<input type="hidden" name="menukbn" value="0">
+				<input type="hidden" name="subkbn" value="2">
+				<input type="hidden" name="histname" value="">
+				<input type="hidden" name="histnum" value="2">
+				<input type="hidden" name="bkskbn" value="">
+				<input type="hidden" name="btskbn" value="">
+				<input type="hidden" id="authorid" name="authorid" value="">
+				<input type="hidden" id="publishid" name="publishid" value="">
+				<input type="hidden" id="kenmeiid" name="kenmeiid" value="">
+				<!-- キーワード -->
+								<input type="text" class="iw20" id="keyword" name="keyword" value="" style="ime-mode:active" autocomplete="off">
+				<input type=hidden name=keyflg value=and>
+				<!-- 書名 -->
+					<input type="text" class="iw20" id="title" name="title" value="" style="ime-mode:active" autocomplete="off">
+				<input type=hidden name=titflg value=and> <!--
+
+								<select id="titflg" name="titflg">
+
+									<option value="and"  selected >をすべて含む(and)</option>
+
+									<option value="or" >のいずれかを含む(or)</option>
+
+									<option value="before" >ではじまる</option>
+
+									<option value="equal" >と一致する</option>
+
+								</select>
+-->
+				<!-- 著者 -->
+								<input type="text" class="iw20" id="author" name="author" value="" style="ime-mode:active" autocomplete="off">
+				<input type=hidden name=autflg value=and> <!--
+
+								<select id="autflg" name="autflg">
+
+									<option value="and"  selected >をすべて含む(and)</option>
+
+									<option value="or" >のいずれかを含む(or)</option>
+
+									<option value="before" >ではじまる</option>
+
+									<option value="equal" >と一致する</option>
+
+								</select>-->
+
+<!--
+							<th class="left">出版者</th>
+
+							<td>
+
+								<input type="text" class="iw20" id="publish" name="publish" value="" style="ime-mode:active" autocomplete="off">
+
+								<select id="pubflg" name="pubflg">
+
+									<option value="and"  selected >をすべて含む(and)</option>
+
+									<option value="or" >のいずれかを含む(or)</option>
+
+									<option value="before" >ではじまる</option>
+
+									<option value="equal" >と一致する</option>
+
+								</select>
+
+								<button type="button" onclick="searchrefer('searchdtlrefer.do','cartwindow','menubar=yes,scrollbars=yes,resizable=yes,width=530,height=500','02');">出版者一覧</button>
+
+							</td>
+
+						</tr>
+
+						<tr>
+
+							<th class="left">出版年</th>
+
+							<td>
+
+								<select id="publiy1" name="publiy1" size="1">
+
+									<option value=""  selected >----</option>
+
+									<option value="2014" >2014</option>
+
+									<option value="2013" >2013</option>
+
+									<option value="2012" >2012</option>
+
+									<option value="2011" >2011</option>
+
+									<option value="2010" >2010</option>
+
+									<option value="2009" >2009</option>
+
+									<option value="2008" >2008</option>
+
+									<option value="2007" >2007</option>
+
+									<option value="2006" >2006</option>
+
+									<option value="2005" >2005</option>
+
+									<option value="2004" >2004</option>
+
+									<option value="2003" >2003</option>
+
+									<option value="2002" >2002</option>
+
+									<option value="2001" >2001</option>
+
+									<option value="2000" >2000</option>
+
+									<option value="1999" >1999</option>
+
+									<option value="1998" >1998</option>
+
+									<option value="1997" >1997</option>
+
+									<option value="1996" >1996</option>
+
+									<option value="1995" >1995</option>
+
+									<option value="1994" >1994</option>
+
+									<option value="1993" >1993</option>
+
+									<option value="1992" >1992</option>
+
+									<option value="1991" >1991</option>
+
+									<option value="1990" >1990</option>
+
+									<option value="1989" >1989</option>
+
+									<option value="1988" >1988</option>
+
+									<option value="1987" >1987</option>
+
+									<option value="1986" >1986</option>
+
+									<option value="1985" >1985</option>
+
+									<option value="1984" >1984</option>
+
+									<option value="1983" >1983</option>
+
+									<option value="1982" >1982</option>
+
+									<option value="1981" >1981</option>
+
+									<option value="1980" >1980</option>
+
+									<option value="1979" >1979</option>
+
+									<option value="1978" >1978</option>
+
+									<option value="1977" >1977</option>
+
+									<option value="1976" >1976</option>
+
+									<option value="1975" >1975</option>
+
+									<option value="1974" >1974</option>
+
+									<option value="1973" >1973</option>
+
+									<option value="1972" >1972</option>
+
+									<option value="1971" >1971</option>
+
+									<option value="1970" >1970</option>
+
+									<option value="1969" >1969</option>
+
+									<option value="1968" >1968</option>
+
+									<option value="1967" >1967</option>
+
+									<option value="1966" >1966</option>
+
+									<option value="1965" >1965</option>
+
+									<option value="1964" >1964</option>
+
+									<option value="1963" >1963</option>
+
+									<option value="1962" >1962</option>
+
+									<option value="1961" >1961</option>
+
+									<option value="1960" >1960</option>
+
+									<option value="1959" >1959</option>
+
+									<option value="1958" >1958</option>
+
+									<option value="1957" >1957</option>
+
+									<option value="1956" >1956</option>
+
+									<option value="1955" >1955</option>
+
+									<option value="1954" >1954</option>
+
+									<option value="1953" >1953</option>
+
+									<option value="1952" >1952</option>
+
+									<option value="1951" >1951</option>
+
+									<option value="1950" >1950</option>
+
+								</select>年
+
+								<select id="publiy2" name="publiy2" size="1">
+
+									<option value=""  selected >--</option>
+
+									<option value="1" > 01 </option>
+
+									<option value="2" > 02 </option>
+
+									<option value="3" > 03 </option>
+
+									<option value="4" > 04 </option>
+
+									<option value="5" > 05 </option>
+
+									<option value="6" > 06 </option>
+
+									<option value="7" > 07 </option>
+
+									<option value="8" > 08 </option>
+
+									<option value="9" > 09 </option>
+
+									<option value="10" > 10 </option>
+
+									<option value="11" > 11 </option>
+
+									<option value="12" > 12 </option>
+
+								</select>月から
+
+								<select id="publiy3" name="publiy3" size="1">
+
+									<option value=""  selected >----</option>
+
+									<option value="2014" >2014</option>
+
+									<option value="2013" >2013</option>
+
+									<option value="2012" >2012</option>
+
+									<option value="2011" >2011</option>
+
+									<option value="2010" >2010</option>
+
+									<option value="2009" >2009</option>
+
+									<option value="2008" >2008</option>
+
+									<option value="2007" >2007</option>
+
+									<option value="2006" >2006</option>
+
+									<option value="2005" >2005</option>
+
+									<option value="2004" >2004</option>
+
+									<option value="2003" >2003</option>
+
+									<option value="2002" >2002</option>
+
+									<option value="2001" >2001</option>
+
+									<option value="2000" >2000</option>
+
+									<option value="1999" >1999</option>
+
+									<option value="1998" >1998</option>
+
+									<option value="1997" >1997</option>
+
+									<option value="1996" >1996</option>
+
+									<option value="1995" >1995</option>
+
+									<option value="1994" >1994</option>
+
+									<option value="1993" >1993</option>
+
+									<option value="1992" >1992</option>
+
+									<option value="1991" >1991</option>
+
+									<option value="1990" >1990</option>
+
+									<option value="1989" >1989</option>
+
+									<option value="1988" >1988</option>
+
+									<option value="1987" >1987</option>
+
+									<option value="1986" >1986</option>
+
+									<option value="1985" >1985</option>
+
+									<option value="1984" >1984</option>
+
+									<option value="1983" >1983</option>
+
+									<option value="1982" >1982</option>
+
+									<option value="1981" >1981</option>
+
+									<option value="1980" >1980</option>
+
+									<option value="1979" >1979</option>
+
+									<option value="1978" >1978</option>
+
+									<option value="1977" >1977</option>
+
+									<option value="1976" >1976</option>
+
+									<option value="1975" >1975</option>
+
+									<option value="1974" >1974</option>
+
+									<option value="1973" >1973</option>
+
+									<option value="1972" >1972</option>
+
+									<option value="1971" >1971</option>
+
+									<option value="1970" >1970</option>
+
+									<option value="1969" >1969</option>
+
+									<option value="1968" >1968</option>
+
+									<option value="1967" >1967</option>
+
+									<option value="1966" >1966</option>
+
+									<option value="1965" >1965</option>
+
+									<option value="1964" >1964</option>
+
+									<option value="1963" >1963</option>
+
+									<option value="1962" >1962</option>
+
+									<option value="1961" >1961</option>
+
+									<option value="1960" >1960</option>
+
+									<option value="1959" >1959</option>
+
+									<option value="1958" >1958</option>
+
+									<option value="1957" >1957</option>
+
+									<option value="1956" >1956</option>
+
+									<option value="1955" >1955</option>
+
+									<option value="1954" >1954</option>
+
+									<option value="1953" >1953</option>
+
+									<option value="1952" >1952</option>
+
+									<option value="1951" >1951</option>
+
+									<option value="1950" >1950</option>
+
+								</select>年
+
+								<select id="publiy4" name="publiy4" size="1">
+
+									<option value=""  selected >--</option>
+
+									<option value="1" > 01 </option>
+
+									<option value="2" > 02 </option>
+
+									<option value="3" > 03 </option>
+
+									<option value="4" > 04 </option>
+
+									<option value="5" > 05 </option>
+
+									<option value="6" > 06 </option>
+
+									<option value="7" > 07 </option>
+
+									<option value="8" > 08 </option>
+
+									<option value="9" > 09 </option>
+
+									<option value="10" > 10 </option>
+
+									<option value="11" > 11 </option>
+
+									<option value="12" > 12 </option>
+
+								</select>月まで
+
+							</td>
+
+						</tr>
+
+						<tr>
+
+							<th class="left">ＩＳＢＮ</th>
+
+							<td>
+
+								<input type="text" class="iw10" id="isbn" name="isbn" value="" style="ime-mode: disabled;" autocomplete="off">
+
+							</td>
+
+						</tr>
+
+						<tr>
+
+							<th class="left">件名</th>
+
+							<td>
+
+								<input type="text" class="iw20" id="kenmei" name="kenmei" value="" style="ime-mode:active" autocomplete="off">
+
+								<select id="kenflg" name="kenflg">
+
+									<option value="and"  selected >をすべて含む(and)</option>
+
+									<option value="or" >のいずれかを含む(or)</option>
+
+									<option value="before" >ではじまる</option>
+
+									<option value="equal" >と一致する</option>
+
+								</select>
+
+								<button type="button" onclick="searchrefer('searchdtlrefer.do','cartwindow','menubar=yes,scrollbars=yes,resizable=yes,width=530,height=500','03');">件名一覧</button>
+
+							</td>
+
+						</tr>
+
+						<tr>
+
+							<th class="left">分類</th>
+
+							<td>
+
+								<input type="text" class="iw20" id="bunruicode" name="bunruicode" value="" style="ime-mode:disabled" autocomplete="off">
+
+							</td>
+
+						</tr>
+
+																								
+
+
+
+
+
+						<tr>
+
+							<th class="left">資料区分</th>
+
+							<td>
+
+												<label><input type="checkbox" id="bookkbn" name="bookkbn" value="01" >図書</label>
+
+										<label><input type="checkbox" id="bookkbn" name="bookkbn" value="02" >雑誌</label>
+
+										<label><input type="checkbox" id="bookkbn" name="bookkbn" value="03" >AV</label>
+
+										</td>
+
+						</tr>
+
+						<tr>
+
+							<th class="left">資料種別</th>
+
+							<td>
+
+												<label><input type="checkbox" id="booktype" name="booktype" value="11" >図書一般</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="12" >図書児童</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="13" >図書参考</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="14" >図書郷土</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="15" >図書洋書</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="16" >図書絵本</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="17" >図書紙芝居</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="18" >学校図書支援センター</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="21" >雑誌一般</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="22" >雑誌郷土</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="23" >雑誌児童</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="31" >ＣＤ一般</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="32" >ＣＤ児童</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="33" >郷土ＣＤ</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="34" >カセットブック</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="35" >ビデオ一般</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="36" >ビデオ児童</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="37" >ビデオ郷土</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="38" >ＤＶＤ一般</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="39" >ＤＶＤ児童</label>
+
+										<label><input type="checkbox" id="booktype" name="booktype" value="40" >ＤＶＤビジネス</label>
+
+										</td>
+
+						</tr>
+
+						<tr>
+							<th class="left">表示件数</th>
+-->
+				<input type=hidden name=count value=100>
+
+<!--							<th class="left">表示順序</th> -->
+				<input type=hidden name=order value=publish>
+				<input type=hidden name=orderflg value=desc>
+
+<!--
+							<td>
+
+								<select id="order" name="order">
+
+									<option value=""  selected >なし</option>
+
+										<option value="title" >タイトル順</option>
+
+											<option value="author" >著者名順</option>
+
+											<option value="publish" >出版年順</option>
+
+											<option value="bunrui" >分類順</option>
+
+									</select>
+-->
+					<div class="page_content_frame_control">
+
+						<button type="submit" class="btn_medium" id=btn1>GO</button>
+						<button type="submit" class="btn_medium" id=btn2>GO</button>
+						<button type="submit" class="btn_medium" id=btn3>GO</button>
+
+					</div>
+				</div>
+				</form>
+
+<div id="foot">
+	<a id=spc href=jk-libspace.html>GO</a>
+	<a id=top href=index.html>GO</a>
+	<a id=map href=jk-libmap.html>GO</a>
+</div>
+
+<div class="footer">
+連携：<a href=https://www.lib100.nexs-service.jp/sabae/webopac/historyback.do?back=0 target=_blank>鯖江市図書館 OPAC</a><br>
+アプリ： CC BY <a href=http://sabae-jk.jp/ target=_blank>鯖江市役所JK課</a><br>
+</div>
+
+<div class=sample>
+本</div>
+</body>
+</html>
