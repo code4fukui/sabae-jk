@@ -115,6 +115,7 @@ new media_line_me.LineButton({"pc":false,"lang":"ja","type":"a","text":"鯖江�
 
 				<h2 class="clearBoth" style="margin-left:0px; margin-top:40px; margin-right:0px"><img src="images/h2_5.gif" width="290" height="35" alt="これまでの活動実績"></h2>
 				<ul id="gallery" class="clearfix">
+					<!--
 					<li>
 						<img src="images/archive14_1.jpg" alt="一年間で20以上の企画／活動を実施"><br />
 						アプリ開発やスイーツ商品企画など、様々。地元企業・団体と連携して1年間で20以上の企画や活動を実現!
@@ -131,7 +132,21 @@ new media_line_me.LineButton({"pc":false,"lang":"ja","type":"a","text":"鯖江�
 						<img src="images/archive14_4.jpg" alt="活動資金はクラウドファンディングで調達！"><br />
 						卒業イベントや次年度の活動に必要な資金を、自治体のプロジェクトとしてクラウドファンディングで調達!
 					</li>
+										-->
 				</ul>
+				<script type="module">
+					import { CSV } from "https://js.sabae.cc/CSV.js";
+					const data = CSV.toJSON(await CSV.fetch("opendata/result.csv"));
+					console.log(data)
+					const html = [];
+					for (const d of data) {
+						html.push(`<li>
+							<a href="${d.url}"><img src="${d.image}" alt="${d.title}！"></a><br>
+							${d.description}
+						</li>`);
+					}
+					gallery.innerHTML = html.join("\n");
+				</script>
 				<p class="center"><a href="https://ameblo.jp/sabae-jk/" target="_blank"><img src="images/btn_news.gif" width="300" height="67"></a></p>
 
 
